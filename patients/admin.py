@@ -1,7 +1,26 @@
 from django.contrib import admin
-from .models import PatientProfile
+from .models import PatientProfile, Prescription
 from django import forms
 from accounts.models import User
+
+
+class PrescriptionAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['patient'].queryset = User.objects.filter(role='patient')
+        self.fields['doctor'].queryset = User.objects.filter(role='doctor')
+
+    class Meta:
+        model = Prescription
+        fields = '__all__'
+
+@admin.register(Prescription)
+class PrescriptionAdmin(admin.ModelAdmin):
+    form = PrescriptionAdminForm
+    list_display = ('patient', 'doctor', 'medication_name', 'status', 'prescribed_date')
+    list_filter = ('status',)
+    search_fields = ('patient__first_name', 'medication_name')
+
 
 class PatientProfileAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
