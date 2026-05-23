@@ -23,6 +23,30 @@ class PatientAppointmentsView(generics.ListAPIView):
         
         return qs
 
+class RescheduleAppointmentView(APIView):
+    permission_classes = [IsPatient]
+
+    def patch(self, request, pk):
+        try: 
+            appointment = Appointment.objects.get(pk=pk, patient=request.user)
+            if appointment.status in ['completed', 'cancelled']:
+                return Response({"error" : "Cannot reschedule this appointment"}, status=400)
+            
+            new_date = request.data.get('appointment_date')
+            new_time = request.data.get('appointment_time')
+            
+            if not new_date or not new_time:
+                return Response({"error" : "Both date and time are required."}, status=400)
+            
+            appointment.appointment_date = new_date
+            appointment.appointment_time = new_time
+            appointment.status = 'pending'
+            appointment.save()
+
+            return Response({"message" : "Appointment rescheduled successfully"})
+        except Appointment.DoesNotExist:
+            return Response({"error" : "Not found."}, status=404)
+
 
 class BookAppointmentView(generics.CreateAPIView):
     permission_classes = [IsPatient]

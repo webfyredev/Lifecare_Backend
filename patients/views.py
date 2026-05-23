@@ -4,6 +4,7 @@ from accounts.permissions import IsPatient
 from appointments.models import Appointment
 from django.utils import timezone
 from .models import Prescription
+from .serializers import PrescriptionSerializer, PatientProfileSerializer
 
 class PatientDashboardView(APIView):
     permission_classes = [IsPatient]
@@ -23,7 +24,7 @@ class PatientDashboardView(APIView):
                 {
                     "id": appt.id,
                     "doctor_name":f"Dr. {appt.doctor.get_full_name()}",
-                    "specialization": getattr(a.doctor.doctor_profile, 'specialization', ''),
+                    "specialization": getattr(appt.doctor.doctor_profile, 'specialization', ''),
                     "appointment_date": appt.appointment_date,
                     "appointment_time": appt.appointment_time,
                     "status": appt.status,
@@ -49,3 +50,38 @@ class PatientDashboardView(APIView):
             # "active_prescriptions_count": active_prescriptions.count(),
 
         })
+
+class PatientPrescriptionView(APIView):
+    permission_classes = [IsPatient]
+
+    def get(self, request):
+        filter_type = request.query_params.get('filter', 'all')
+        qs = Prescription.objects.filter(patient=request.user).select_related('doctor').order_by('-prescribed_date')
+        if filter_type == 'active':
+            qs = qs.filter(status='active')
+        elif filter_type == 'completed':
+            qs = qs.filter(status='completed')
+        
+        active_count = Prescription.objects.filter(patient=request.user, status ='active').count()
+        completed_count = Prescription.objects.filter(patient=request.user, status='completed').count()
+        total_count = Prescription.objects.filter(patient=request.user).count()
+
+        serializer = PrescriptionSerializer(qs, many=True)
+        return Response({
+            "prescriptions" : serializer.data,
+            "active_count" : active_count,
+            "completed_count" : completed_count,
+            "total_count" : total_count
+        })
+
+class PatientProfileUpdateView(APIView):
+    permission_classes = [IsPatient]
+
+    def patch(self, request):
+        profile = request.user.patient_profile
+        serializer = PatientProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    
