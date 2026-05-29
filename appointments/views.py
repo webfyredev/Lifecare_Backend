@@ -89,3 +89,62 @@ class AvailableDoctorsView(APIView):
             } for d in doctors
         ]
         return Response(data)
+
+
+class DoctorAppointmentsView(APIView):
+    permission_classes = [IsDoctor]
+
+    def get(self, request):
+        doctor = request.user
+        filter_type = request.query_params.get('filter', 'all')
+        today = timezone.now().date()
+        qs = Appointment.objects.filter(doctor=doctor).select_related('patient', 'patient__patient_profile').order_by('appointment_date', 'appointment_time')
+
+        if filter_type == 'today':
+            qs = qs.filter(appointment_date=today)
+        elif filter_type == 'upcoming':
+            qs = qs.filter(appointment_date__gt=today, status__in=['pending', 'confirmed'])
+        elif filter_type == 'completed':
+            qs = qs.filter(status='completed')
+        
+        return Response([
+            {
+                "id" : a.id,
+                "patient_name" : a.patient.get_full_name(),
+                "patient_initials" : f"{a.patient.first_name[:1]} {a.patient.last_name[:1]}".upper(),
+                "patient_picture" : request.build_absolute_uri(a.patient.profile_picture.url) if a.patient.profile_picture else None,
+                "date" : a.appointment_date,
+                "time" : a.appointment_time,
+                "reason" : a.reason,
+                "notes" : a.notes,
+                "status" : a.status,
+                "location" : a.location
+            } for a in qs
+        ])
+
+class ConfirmAppointmentView(APIView):
+    permission_classes = [IsDoctor]
+
+    def patch(self, request, pk):
+        try : 
+            apt = Appointment.objects.get(pk=pk, doctor=request.user)
+            apt.status = 'confirmed'
+            apt.save()
+            return Response({"message" : "Appointment Confirmed."})
+        except Appointment.DoesNotExist:
+            return Response({"error" : "Not Found"}, status=404)
+
+class CompleteAppointmentView(APIView):
+    permission_classes = [IsDoctor]
+
+    def patch(self, request, pk):
+        try:
+            apt = Appointment.objects.get(pk=pk, doctor=request.user)
+            notes = request.data.get('notes', '')
+            apt.status = 'completed',
+            apt.notes = notes
+            apt.save()
+            return Response({"message" : "Appointment Completed."})
+        except Appointment.DoesNotExist:
+            return Response({"error" : "Not Found"}, status=404)
+

@@ -19,30 +19,48 @@ class MessageSerializer(serializers.ModelSerializer):
         return obj.sender == request.user
 
 class ConversationSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.SerializerMethodField()
-    doctor_specialization = serializers.SerializerMethodField()
-    doctor_picture = serializers.SerializerMethodField()
+    other_person_name = serializers.SerializerMethodField()
+    other_person_picture = serializers.SerializerMethodField()
+    other_person_subtitle = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
-        fields = ('id', 'doctor_name', 'doctor_specialization', 'doctor_picture', 'last_message', 'unread_count')
+        fields = ('id', 'other_person_name', 'other_person_picture', 'other_person_subtitle', 'last_message', 'unread_count')
 
-    def get_doctor_name(self, obj):
-        return f"Dr. {obj.doctor.get_full_name()}"
-
-    def get_doctor_specialization(self, obj):
-        try:
-            return obj.doctor.doctor_profile.specialization
-        except:
-            return ''
-    
-    def get_doctor_picture(self, obj):
+    def get_other_person(self, obj):
         request = self.context.get('request')
-        if obj.doctor.profile_picture and request:
-            return request.build_absolute_uri(obj.doctor.profile_picture.url)
+        if request.user.role == 'doctor':
+            return obj.patient
+        return obj.doctor
+    
+    def get_other_person_name(self, obj):
+        other = self.get_other_person(obj)
+        request = self.context.get('request')
+        if request.user.role == 'doctor':
+            return other.get_full_name()
+        return f"Dr. {other.get_full_name()}"
+    
+    def get_other_person_picture(self, obj):
+        other = self.get_other_person(obj)
+        request = self.context.get('request')
+        if other.profile_picture and request:
+            return request.build_absolute_uri(other.profile_picture.url)
         return None
+
+    def get_other_person_subtitle(self, obj):
+        request = self.context.get('request')
+        if request.user.role == 'doctor':
+            try:
+                return obj.patient.patient_profile.blood_type or ''
+            except:
+                return ''
+        else:
+            try:
+                return obj.doctor.doctor_profile.specialization
+            except:
+                return ''
     
     def get_last_message(self, obj):
         last = obj.messages.last()
