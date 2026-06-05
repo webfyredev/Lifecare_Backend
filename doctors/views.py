@@ -66,7 +66,10 @@ class DoctorPatientView(APIView):
 
         patient_ids = Appointment.objects.filter(doctor=doctor).values_list('patient', flat=True).distinct()
 
+        print(f"DEBUG → doctor: {doctor}, patient_ids: {list(patient_ids)}")
+
         patients = User.objects.filter(id__in=patient_ids).select_related('patient_profile')
+
         if search:
             patients = User.objects.filter(id__in=patient_ids).filter(first_name__icontains=search) | User.objects.filter(id__in=patient_ids, last_name__icontains=search)
             # patients = patients.filter(first_name__icontains=search) | patients.filter(last_name__icontains=search)
@@ -74,15 +77,16 @@ class DoctorPatientView(APIView):
         data = []
         for p in patients:
             last_apt = Appointment.objects.filter(doctor=doctor, patients=p).order_by('-appointment_date').first()
+            status = 'monitor' if last_apt and last_apt.status == 'pending' else 'stable'
             
             data.append({
                 "id" : p.id,
                 "name" : p.get_full_name(),
                 "initials" : f"{p.first_name[:1]} {p.last_name[:1]}".upper(),
-                "profile_picture" : request.build_absolute_uri(p.profile_picture.url),
+                "profile_picture" : request.build_absolute_uri(p.profile_picture.url) if p.profile_picture else None,
                 "gender" : p.gender,
                 "date_of_birth" : p.date_of_birth,
-                "blood_type" : getattr(p.patient_profile, 'blood_type', ''),
+                "blood_type" : getattr(p.patient_profile, 'blood_type', '') if hasattr(p, 'patient_profile') else '',
                 "last_visit" : last_apt.appointment_date if last_apt else None,
                 "allergies" : getattr(p.patient_profile, 'allergies', ''),
                 "medical_history" : getattr(p.patient_profile, 'medical_history', '')
@@ -96,7 +100,6 @@ class PatientDetailsView(APIView):
 
     def get(self, request, patient_id):
         doctor = request.user
-
         has_relation = Appointment.objects.filter(doctor=doctor, patient_id=patient_id).exists()
         
         if not has_relation:

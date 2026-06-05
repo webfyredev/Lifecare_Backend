@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from accounts.permissions import IsPatient
 from appointments.models import Appointment
 from django.utils import timezone
-from .models import Prescription
+from .models import Prescription, MedicalRecords
 from .serializers import PrescriptionSerializer, PatientProfileSerializer
 
 class PatientDashboardView(APIView):
@@ -84,4 +84,40 @@ class PatientProfileUpdateView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+
+class PatientRecordsView(APIView):
+    permission_classes = [IsPatient]
+
+    def get(self, request):
+        filter_type = request.query_params.get('filter', 'all')
+
+        qs = MedicalRecords.objects.filter(patient=request.user).select_related('doctor')
+
+        if filter_type != 'all':
+            qs = qs.filter(record_type=filter_type)
+        
+        total = MedicalRecords.objects.filter(patient=request.user).count()
+        
+        type_counts = {}
+
+        for choice in MedicalRecords.RECORDS_TYPE_CHOICES:
+            type_counts[choice[0]] = MedicalRecords.objects.filter(patient=request.user, record_type=choice[0]).count()
+
+
+        return Response({
+            "records" : [
+                {
+                    "id" : r.id,
+                    "title" : r.title,
+                    "record_type" : r.record_type,
+                    "description" : r.description,
+                    "file" : request.build_absolute_uri(r.file.url) if r.file else None,
+                    "date_recorded" : r.date_recorded,
+                    "doctor_name" : f"Dr. {r.doctor.get_full_name()} " if r.doctor else "LifeCare",
+                } for r in qs
+            ],
+            "total" : total,
+            "type_counts": type_counts
+        })      
     

@@ -82,7 +82,6 @@ class MedicalNotesDetailView(APIView):
 
             return Response({"message" : "Note Updated."})
         except MedicalNotes.DoesNotExist:
-            
             return Response({"error" : "Not Found"}, status=404)
     
     def delete(self, request, pk):
