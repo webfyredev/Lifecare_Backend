@@ -1,8 +1,10 @@
 from django.db import models
 from accounts.models import User
+import uuid
 
 class PatientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
+    hospital_number = models.CharField(max_length=20, null=True, blank=True)
     blood_type = models.CharField(max_length=5, blank=True)
     allergies = models.TextField(blank=True)
     emergency_contact_name = models.CharField(max_length=100, blank=True)
@@ -11,8 +13,22 @@ class PatientProfile(models.Model):
     medical_history = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def generate_hospital_number(self):
+        from django.utils import timezone
+        year = timezone.now().year
+        uid = str(uuid.uuid4().int)[:6]
+        return f"LC-{year}-{uid}"
+    
+    def save(self, *args, **kwargs):
+        if not self.hospital_number:
+            number = self.generate_hospital_number()
+            while PatientProfile.objects.filter(hospital_number=number).exists():
+                number = self.generate_hospital_number()
+            self.hospital_number = number
+        
+        super().save(*args, **kwargs)
     def __str__(self):
-        return f"Patient: {self.user.get_full_name()}"
+        return f"Patient: {self.user.get_full_name()} [{self.hospital_number}]"
 
 class Prescription(models.Model):
     STATUS_CHOICES = (

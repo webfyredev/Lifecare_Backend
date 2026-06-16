@@ -140,9 +140,11 @@ class CompleteAppointmentView(APIView):
     def patch(self, request, pk):
         try:
             apt = Appointment.objects.get(pk=pk, doctor=request.user)
-            notes = request.data.get('notes', '')
-            apt.status = 'completed',
-            apt.notes = notes
+            if apt.status in ['completed', 'cancelled']:
+                return Response({"error" : "Cannot complete this appointment"}, status=400)
+
+            apt.status = 'completed'
+            apt.notes = request.data.get('notes', '').strip()
             apt.save()
             return Response({"message" : "Appointment Completed."})
         except Appointment.DoesNotExist:

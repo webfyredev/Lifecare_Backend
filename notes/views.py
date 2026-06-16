@@ -63,7 +63,7 @@ class MedicalNotesView(APIView):
             "content" : note.content,
             "category" : note.category,
             "severity" : note.severity,
-            "patient_name" : note.get_full_name(),
+            "patient_name" : note.patient.get_full_name(),
             "created_at" : note.created_at
         }, status=201)
 

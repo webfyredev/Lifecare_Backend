@@ -4,7 +4,7 @@ from accounts.permissions import IsDoctor
 from appointments.models import Appointment
 from accounts.models import User
 from django.utils import timezone
-from patients.models import PatientProfile, Prescription
+from patients.models import PatientProfile, Prescription, MedicalRecords
 from patients.serializers import PatientProfileSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
@@ -62,7 +62,7 @@ class DoctorPatientView(APIView):
     def get(self, request):
         doctor = request.user
         filter_type = request.query_params.get('filter', 'all')
-        search = request.query.params.get('search', '')
+        search = request.query_params.get('search', '')
 
         patient_ids = Appointment.objects.filter(doctor=doctor).values_list('patient', flat=True).distinct()
 
@@ -76,7 +76,7 @@ class DoctorPatientView(APIView):
         
         data = []
         for p in patients:
-            last_apt = Appointment.objects.filter(doctor=doctor, patients=p).order_by('-appointment_date').first()
+            last_apt = Appointment.objects.filter(doctor=doctor, patient=p).order_by('-appointment_date').first()
             status = 'monitor' if last_apt and last_apt.status == 'pending' else 'stable'
             
             data.append({
@@ -89,7 +89,8 @@ class DoctorPatientView(APIView):
                 "blood_type" : getattr(p.patient_profile, 'blood_type', '') if hasattr(p, 'patient_profile') else '',
                 "last_visit" : last_apt.appointment_date if last_apt else None,
                 "allergies" : getattr(p.patient_profile, 'allergies', ''),
-                "medical_history" : getattr(p.patient_profile, 'medical_history', '')
+                "medical_history" : getattr(p.patient_profile, 'medical_history', ''),
+                "status" : status
             })
         
         return Response(data)
@@ -114,6 +115,7 @@ class PatientDetailsView(APIView):
 
         appointments = Appointment.objects.filter(doctor=doctor, patient=patient).order_by('-appointment_date')[:5]
         prescriptions = Prescription.objects.filter(doctor=doctor, patient=patient, status='active')
+        medical_records = MedicalRecords.objects.filter(patient=patient).order_by('-date_recorded')[:5]
 
         from messaging.models import Conversation
 
@@ -155,6 +157,16 @@ class PatientDetailsView(APIView):
                     "notes" : p.notes,
 
                 } for p in prescriptions
+            ],
+            "medical_records" : [
+                {
+                    "id" : r.id,
+                    "title" : r.title,
+                    "record_type" : r.record_type,
+                    "description" : r.description,
+                    "date_recorded" : r.date_recorded,
+                    "file" : request.build_absolute_uri(r.file.url) if r.file else None,
+                } for r in medical_records
             ],
             "conversation_id" : conversation.id if conversation else None
         })
