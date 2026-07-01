@@ -70,4 +70,31 @@ class MessageListView(APIView):
         return Response(serializer.data, status=201)
 
 
+class MessageDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, conv_id, message_id):
+        try:
+            message = Message.objects.get(id=message_id, conversation_id=conv_id, sender=request.user)
+            new_body = request.data.get('body', '').strip()
+            if not new_body:
+                return Response({"error" : "Message cannot be empty."}, status=400)
+            message.body = new_body
+            message.is_edited = True
+            message.save()
+
+            serializer = MessageSerializer(message, context={'request' : request})
+            return Response(serializer.data)
+        except Message.DoesNotExist:
+            return Response({"error" : "Not found"}, status=404)
+    
+    def delete(self, request, conv_id, message_id):
+        try:
+            message = Message.objects.get(id=message_id, conversation_id=conv_id, sender=request.user)
+            message.delete()
+            return Response({"message" : "Deleted"}, status=204)
+        except Message.DoesNotExist:
+            return Response({"error" : "Not found."}, status=404)
+
+
 

@@ -21,6 +21,7 @@ class Message(models.Model):
     body = models.TextField(blank=True)
     file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     file_type = models.CharField(max_length=20, blank=True)
+    is_edited = models.BooleanField(default=False)
     is_read = models.BooleanField(default=False)
     created_at  = models.DateTimeField(auto_now_add=True)
 
