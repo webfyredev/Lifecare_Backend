@@ -43,14 +43,31 @@ class MessageListView(APIView):
                 conv = Conversation.objects.get(id=conv_id, patient=request.user)
             else:
                 conv = Conversation.objects.get(id=conv_id, doctor=request.user)
-            
-            message = Message.objects.create(conversation=conv, sender=request.user, body=request.data.get('body', '').strip())
-
-            conv.save()
-
-            serializer = MessageSerializer(message, context={'request' : request})
-            return Response(serializer.data, status=201)
         except Conversation.DoesNotExist:
             return Response({"error" : "Not Found"}, status=404)
+        
+        body = request.data.get('body', '').strip()
+        file = request.FILES.get('file')
+
+        file_type = ''
+        if file:
+            if file.content_type.startswith('image'):
+                file_type = 'image'
+            elif file.content_type in ['application/pdf']:
+                file_type = 'pdf'
+            elif 'document' in file.content_type or 'word' in file.content_type:
+                file_type = 'document'
+            else:
+                file_type = 'file'
+        
+        if not body and not file:
+            return Response({"error" : "Message cannot be empty."}, status=400)
+
+
+        message = Message.objects.create(conversation=conv, sender=request.user, body=body, file=file or None, file_type=file_type)
+        conv.save()
+        serializer = MessageSerializer(message, context={'request' : request})
+        return Response(serializer.data, status=201)
+
 
 

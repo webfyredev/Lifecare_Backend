@@ -18,7 +18,9 @@ class Conversation(models.Model):
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    body = models.TextField()
+    body = models.TextField(blank=True)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
+    file_type = models.CharField(max_length=20, blank=True)
     is_read = models.BooleanField(default=False)
     created_at  = models.DateTimeField(auto_now_add=True)
 

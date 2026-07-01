@@ -5,6 +5,7 @@ from django.utils import timezone
 from accounts.permissions import IsPatient, IsDoctor
 from .models import Appointment
 from .serializers import AppointmentSerializer
+from notifications.emails import send_appointment_confirmed
 
 class PatientAppointmentsView(generics.ListAPIView):
     permission_classes = [IsPatient]
@@ -130,6 +131,11 @@ class ConfirmAppointmentView(APIView):
             apt = Appointment.objects.get(pk=pk, doctor=request.user)
             apt.status = 'confirmed'
             apt.save()
+            try:
+                send_appointment_confirmed(apt)
+            except Exception as e:
+                print(f"Confirmation email failed: {e}")
+                
             return Response({"message" : "Appointment Confirmed."})
         except Appointment.DoesNotExist:
             return Response({"error" : "Not Found"}, status=404)

@@ -7,6 +7,7 @@ from django.utils import timezone
 from patients.models import PatientProfile, Prescription, MedicalRecords
 from patients.serializers import PatientProfileSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from notes.models import MedicalNotes
 
 class DoctorDashboardView(APIView):
     permission_classes = [IsDoctor]
@@ -28,6 +29,28 @@ class DoctorDashboardView(APIView):
             day = today - timedelta(days=i)
             count = Appointment.objects.filter(doctor=doctor, appointment_date=day).count()
             weekly_data.append({"day" : day.strftime('%a'), "date" : str(day), "count" : count})
+        
+        from django.utils.timezone import now
+        month_start = today.replace(day=1)
+        month_apts = Appointment.objects.filter(doctor=doctor, appointment_date__gte=month_start)
+        appointment_breakdown = {
+            "confirmed" : month_apts.filter(status='confirmed').count(),
+            "pending" : month_apts.filter(status='pending').count(),
+            "completed" : month_apts.filter(status='completed').count(),
+            "cancelled" : month_apts.filter(status='cancelled').count(),
+        }
+        thirty_days_ago = today - timedelta(days=30)
+        all_patient_ids = Appointment.objects.filter(doctor=doctor).values_list('patient', flat=True).distinct()
+
+        recent_patient_ids = Appointment.objects.filter(doctor=doctor, appointment_date__gte=thirty_days_ago).values_list('patient', flat=True).distinct()
+
+        followup_ids = set(all_patient_ids) - set(recent_patient_ids)
+
+        from accounts.models import User
+
+        followup_patients = User.objects.filter(id__in=followup_ids)[:5]
+
+        recent_notes = MedicalNotes.objects.filter(doctor=doctor).select_related('patient').order_by('-created_at')[:3]
 
         def serialize_apt(a):
             return {
@@ -54,6 +77,24 @@ class DoctorDashboardView(APIView):
             "pending_count" : pending_count,
             "critical_count" : critical_count,
             "weekly_data" : weekly_data,
+            "appointment_breakdown" : appointment_breakdown,
+            "followup_patients" : [
+                {
+                    "id" : p.id,
+                    "name" : p.get_full_name(),
+                    "initials" : f"{p.first_name[:1]}{p.last_name[:1]}",
+                    "profile_picture" : request.build_absolute_uri(p.profile_picture.url) if p.profile_picture else None,
+                } for p in followup_patients
+            ],
+            "recent_notes" : [
+                {
+                    "id" : n.id,
+                    "title" : n.title,
+                    "patient_name" : n.patient.get_full_name(),
+                    "severity" : n.severity,
+                    "created_at" : n.created_at
+                } for n in recent_notes
+            ]
         })
 
 class DoctorPatientView(APIView):

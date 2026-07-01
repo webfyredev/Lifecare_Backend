@@ -15,6 +15,29 @@ class PatientDashboardView(APIView):
         upcoming_appointments = Appointment.objects.filter(patient=patient, status__in=['pending', 'confirmed'], appointment_date__gte=today).select_related('doctor', 'doctor__doctor_profile').order_by('appointment_date', 'appointment_time')[:5]
         total_visits = Appointment.objects.filter(patient=patient, status='completed').count()
         active_prescriptions  = Prescription.objects.filter(patient=patient, status='active').select_related('doctor')[:5]
+
+        next_apt = upcoming_appointments.first()
+
+        days_until = None
+        if next_apt:
+            days_until = (next_apt.appointment_date - today).days
+        
+        from messaging.models import Message, Conversation
+
+        unread_messages = Message.objects.filter(conversation__patient=patient, is_read=False).exclude(sender=patient).count()
+
+        today_meds = [
+            {
+                "id" : p.id,
+                "medication_name" : p.medication_name,
+                "dosage" : p.dosage,
+                "frequency" : p.frequency,
+                "doctor_name" : f"Dr. {p.doctor.get_full_name()}",
+            } for p in Prescription.objects.filter(patient=patient, status='active')
+        ]
+
+        from patients.models import MedicalRecords
+        recent_records = MedicalRecords.objects.filter(patient=patient).order_by('-date_recorded')[:3]
         return Response({
             "user" : {
                 "name" : patient.get_full_name(),
@@ -46,6 +69,23 @@ class PatientDashboardView(APIView):
                     "status" : p.status,
                 } for p in active_prescriptions
                 
+            ],
+            "next_appointment" : {
+                "doctor_name" : f"Dr. {next_apt.doctor.get_full_name()}",
+                "specialization" : getattr(next_apt.doctor.doctor_profile, 'specialization', ''),
+                "date" : next_apt.appointment_date,
+                "time" : next_apt.appointment_time,
+                "days_until" : days_until
+            } if next_apt else None,
+            "unread_messages" : unread_messages,
+            "today_medications" : today_meds,
+            "recent_records" : [
+                {
+                    "id" : r.id,
+                    "title" : r.title,
+                    "record_type" : r.record_type,
+                    "date_recorded" : r.date_recorded
+                } for r in recent_records
             ]
             # "active_prescriptions_count": active_prescriptions.count(),
 

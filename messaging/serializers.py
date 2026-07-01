@@ -6,11 +6,17 @@ from .models import Conversation, Message
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
     is_mine = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ('id', 'body', 'sender_name', 'is_mine', 'is_read', 'created_at')
+        fields = ('id', 'body', 'sender_name', 'is_mine', 'is_read', 'created_at', 'file_url', 'file_type')
 
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        return None
     def get_sender_name(self, obj):
         return obj.sender.get_full_name()
 

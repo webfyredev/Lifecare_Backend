@@ -31,4 +31,4 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'id', 'doctor', 'doctor_id', 'appointment_date',
             'appointment_time', 'location', 'status', 'reason', 'notes'
         )
-        read_only_fields = ('status',)
+        read_only_fields = ('status')

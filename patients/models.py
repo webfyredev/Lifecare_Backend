@@ -4,7 +4,7 @@ import uuid
 
 class PatientProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
-    hospital_number = models.CharField(max_length=20, null=True, blank=True)
+    hospital_number = models.CharField(max_length=20, unique=True, blank=True)
     blood_type = models.CharField(max_length=5, blank=True)
     allergies = models.TextField(blank=True)
     emergency_contact_name = models.CharField(max_length=100, blank=True)

@@ -20,4 +20,5 @@ class PrescriptionSerializer(serializers.ModelSerializer):
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        fields = ('id', 'blood_type', 'allergies', 'emergency_contact_name', 'emergency_contact_phone', 'insurance_number', 'medical_history')
+        fields = ('id','hospital_number', 'blood_type', 'allergies', 'emergency_contact_name', 'emergency_contact_phone', 'insurance_number', 'medical_history')
+        read_only_fields = ('hospital_number', )

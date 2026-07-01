@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from .models import User
 from patients.serializers import PatientProfileSerializer
 from doctors.serializers import DoctorProfileSerializer
+from notifications.emails import send_welcome_email
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -45,6 +46,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         elif user.role == 'doctor':
             from doctors.models import DoctorProfile
             DoctorProfile.objects.create(user=user)
+        
+        try:
+            hospital_number = getattr(getattr(user, 'patient_profile', None), 'hospital_number', None)
+            send_welcome_email(user, hospital_number=hospital_number)
+
+        except Exception as e:
+            print(f"Welcome email failed for {user.email}: {e}")
         
         return user
 
