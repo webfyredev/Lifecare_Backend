@@ -43,10 +43,14 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 
-ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(',')
+# ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(',')
 
-CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS').split(',')
-CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS').split(',')
+ALLOWED_HOSTS = [
+    host.strip() for host in os.environ.get('ALLOWED_HOSTS', '').split(',') if host.strip()
+]
+
+# CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS').split(',')
+# CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS').split(',')
 CORS_ALLOW_CREDENTIALS = True
 
 
