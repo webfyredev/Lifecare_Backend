@@ -62,7 +62,7 @@ class ForgotPasswordView(APIView):
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-            reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
+            reset_url = f"https://life-care-websites.vercel.app/reset-password/{uid}/{token}"
 
             send_mail(
                 subject="Reset your LifeCare password",
