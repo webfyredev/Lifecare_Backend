@@ -1,18 +1,34 @@
 from django.core.mail import send_mail
 from django.conf import settings
+import resend
+import logging
 
+resend.api_key= getattr(settings, 'RESEND_API_KEY', '')
 def _send(subject, message, recipient):
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list= [recipient],
-            fail_silently=False,
-        )
-        print(f"Email sent to {recipient}: {subject}")
+        params = {
+            "from" : getattr(settings, 'DEFAULT_FROM_EMAIL', 'onboarding@resend.dev'),
+            "to" : [recipient],
+            "subject" : subject,
+            "html" : message.replace("\n", "<br>"),
+
+        }
+        response = resend.Emails.send(params)
+        print(f"Email sent via Resend to {recipient}: {subject}")
+        return response
     except Exception as e:
         print(f"Email failed to {recipient} : {e}")
+
+    #     send_mail(
+    #         subject=subject,
+    #         message=message,
+    #         from_email=settings.DEFAULT_FROM_EMAIL,
+    #         recipient_list= [recipient],
+    #         fail_silently=False,
+    #     )
+    #     print(f"Email sent to {recipient}: {subject}")
+    # except Exception as e:
+    #     print(f"Email failed to {recipient} : {e}")
     
 
 def send_welcome_email(user, hospital_number=None):
