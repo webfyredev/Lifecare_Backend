@@ -32,6 +32,19 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
 SECRET_KEY = env("SECRET_KEY")
 
 # Quick-start development settings - unsuitable for production
@@ -51,7 +64,6 @@ ALLOWED_HOSTS = [
 
 # CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS').split(',')
 # CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS').split(',')
-CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
