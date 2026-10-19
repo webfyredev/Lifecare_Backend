@@ -1,22 +1,47 @@
 from django.core.mail import send_mail
 from django.conf import settings
 import resend
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
-resend.api_key= getattr(settings, 'RESEND_API_KEY', '')
+configuration = sib_api_v3_sdk.Configuration()
+configuration.api_key['api-key'] = getattr(settings, 'BREVO_API_KEY', '')
+
 def _send(subject, message, recipient):
     try:
-        params = {
-            "from" : getattr(settings, 'DEFAULT_FROM_EMAIL', 'onboarding@resend.dev'),
-            "to" : [recipient],
-            "subject" : subject,
-            "html" : message.replace("\n", "<br>"),
-
-        }
-        response = resend.Emails.send(params)
-        print(f"Email sent via Resend to {recipient}: {subject}")
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        sender_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'oyinbook@gmail.com')
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": recipient}],
+            html_content=message.replace("\n", "<br>"),
+            sender={"name": "LifeCare Team", "email": sender_email},
+            subject=subject
+        )
+        
+        response = api_instance.send_transac_email(send_smtp_email)
+        print(f"Email sent via Brevo to {recipient}: {subject}")
         return response
+    except ApiException as e:
+        print(f"Brevo API error for {recipient}: {e}")
     except Exception as e:
-        print(f"Email failed to {recipient} : {e}")
+        print(f"Email failed to {recipient}: {e}")
+
+# resend.api_key= getattr(settings, 'RESEND_API_KEY', '')
+# def _send(subject, message, recipient):
+#     try:
+#         params = {
+#             "from" : getattr(settings, 'DEFAULT_FROM_EMAIL', 'onboarding@resend.dev'),
+#             "to" : [recipient],
+#             "subject" : subject,
+#             "html" : message.replace("\n", "<br>"),
+
+#         }
+#         response = resend.Emails.send(params)
+#         print(f"Email sent via Resend to {recipient}: {subject}")
+#         return response
+#     except Exception as e:
+#         print(f"Email failed to {recipient} : {e}")
 
     #     send_mail(
     #         subject=subject,

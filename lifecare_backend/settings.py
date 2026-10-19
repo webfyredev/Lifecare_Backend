@@ -255,7 +255,8 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default="LifeCare <oyinbook@gmail
 NEWS_API_KEY = env('NEWS_API_KEY', default='')
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
-RESEND_API_KEY = env('RESEND_API_KEY', default='')
+# RESEND_API_KEY = env('RESEND_API_KEY', default='')
+BREVO_API_KEY = env('BREVO_API_KEY', default='')
 CACHES = {
     'default' : {
         'BACKEND' : 'django.core.cache.backends.locmem.LocMemCache',
