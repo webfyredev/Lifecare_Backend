@@ -1,7 +1,6 @@
 from django.core.mail import send_mail
 from django.conf import settings
 import resend
-import logging
 
 resend.api_key= getattr(settings, 'RESEND_API_KEY', '')
 def _send(subject, message, recipient):
