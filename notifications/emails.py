@@ -49,6 +49,7 @@ def send_welcome_email(user, hospital_number=None):
     
     message = f"""{greeting}
 Welcome to LifeCare! Your account has been created successfully.
+
 {specific_line}
 
 Log in to your portal:
