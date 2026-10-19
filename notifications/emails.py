@@ -56,7 +56,7 @@ Log in to your portal:
 https://life-care-websites.vercel.app/login
 
 
-- The LifeCare Team""",
+- The LifeCare Team"""
 
     _send(
         subject=subject,
