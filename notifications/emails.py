@@ -27,48 +27,40 @@ def _send(subject, message, recipient):
     except Exception as e:
         print(f"Email failed to {recipient}: {e}")
 
-# resend.api_key= getattr(settings, 'RESEND_API_KEY', '')
-# def _send(subject, message, recipient):
-#     try:
-#         params = {
-#             "from" : getattr(settings, 'DEFAULT_FROM_EMAIL', 'onboarding@resend.dev'),
-#             "to" : [recipient],
-#             "subject" : subject,
-#             "html" : message.replace("\n", "<br>"),
-
-#         }
-#         response = resend.Emails.send(params)
-#         print(f"Email sent via Resend to {recipient}: {subject}")
-#         return response
-#     except Exception as e:
-#         print(f"Email failed to {recipient} : {e}")
-
-    #     send_mail(
-    #         subject=subject,
-    #         message=message,
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #         recipient_list= [recipient],
-    #         fail_silently=False,
-    #     )
-    #     print(f"Email sent to {recipient}: {subject}")
-    # except Exception as e:
-    #     print(f"Email failed to {recipient} : {e}")
     
 
 def send_welcome_email(user, hospital_number=None):
-    hospital_line = f"Your hospital number is: {hospital_number}\n" if hospital_number else ""
-    _send(
-        subject = "Welcome to LifeCare",
-        message = f"""Hi {user.first_name} {user.last_name},
+    role = getattr(user, 'role', 'patient').lower()
+    if role == 'doctor':
+        subject = "Welcome to LifeCare - Doctor Portal"
+        greeting = f"Hi Dr. {user.first_name} {user.last_name},"
+        specific_line = "Your license number is: PENDING-10. Kindly log in to update it on your portal."
+    elif role == 'admin':
+        subject = "Welcome to LifeCare - Admin Portal"
+        greeting = f"Hi {user.first_name} {user.last_name},"
+        specific_line = "Your administrative account has been created successfully."
+    else:
+        subject = "Welcome to LifeCare"
+        greeting = f"Hi {user.first_name} {user.last_name},"
+        hospital_line = f"Your hospital number is: {hospital_number}\n" if hospital_number else ""
+        specific_line = f"{hospital_line} Keep this email - your hospital number is your unique identifier at LifeCare."
+
+    
+        message = f"""{greeting}
 Welcome to LifeCare! Your account has been created successfully.
-{hospital_line}
-Log in to complete your profile:
+{specific_line}
+
+Log in to your portal:
+
 https://life-care-websites.vercel.app/login
 
-Keep this email - your hospital number is your unique identifier at LifeCare.
 
 - The LifeCare Team""",
-        recipient=user.email
+
+    _send(
+        subject=subject,
+        message=message,
+        recipient=user.email,
     )
 
 
