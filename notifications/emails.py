@@ -30,23 +30,24 @@ def _send(subject, message, recipient):
     
 
 def send_welcome_email(user, hospital_number=None):
+
     role = getattr(user, 'role', 'patient').lower()
     if role == 'doctor':
         subject = "Welcome to LifeCare - Doctor Portal"
         greeting = f"Hi Dr. {user.first_name} {user.last_name},"
-        specific_line = "Your license number is: PENDING-10. Kindly log in to update it on your portal."
+        specific_line = "Your license number is: PENDING-LC. Kindly log in to update it on your portal."
     elif role == 'admin':
         subject = "Welcome to LifeCare - Admin Portal"
         greeting = f"Hi {user.first_name} {user.last_name},"
         specific_line = "Your administrative account has been created successfully."
     else:
-        subject = "Welcome to LifeCare"
+        subject = "Welcome to LifeCare - Patient Portal"
         greeting = f"Hi {user.first_name} {user.last_name},"
         hospital_line = f"Your hospital number is: {hospital_number}\n" if hospital_number else ""
         specific_line = f"{hospital_line} Keep this email - your hospital number is your unique identifier at LifeCare."
 
     
-        message = f"""{greeting}
+    message = f"""{greeting}
 Welcome to LifeCare! Your account has been created successfully.
 {specific_line}
 
